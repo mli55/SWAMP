@@ -24,7 +24,7 @@ Current top level directories in this snapshot
 - `simulation/`  
   Simulation workspace with a Python package, scripts, and tests.
 
-## What this release includes
+## Features
 
 - Analysis and figure generation scripts.
 - Feature extraction utilities for CFR derived metrics and LTE derived indicators.
