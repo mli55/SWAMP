@@ -35,7 +35,7 @@ class PropagationBasicsTest(unittest.TestCase):
         np.testing.assert_allclose(t_tm, expected_tau, atol=1e-12)
 
     def test_refracted_two_segment_vertical_alignment(self):
-        # 垂直穿越界面时，交点应在 (0,0)，角度为 0
+        # Crossing the interface vertically should hit (0,0) with zero angles
         p_air = np.array([0.0, -0.1])
         p_soil = np.array([0.0, 0.2])
         v = 3e8
@@ -51,7 +51,7 @@ class PropagationBasicsTest(unittest.TestCase):
         self.assertAlmostEqual(theta_t, 0.0, places=12)
 
     def test_target_reflection_delay_and_gain_without_fresnel(self):
-        # 关闭 Fresnel，便于直接验证几何延时与 1/L^2 衰减
+        # Disable Fresnel to directly check geometric delay and 1/L^2 decay
         air = Medium("air", epsilon_r=1.0, mu_r=1.0)
         soil = Medium("soil", epsilon_r=1.0, mu_r=1.0)
 

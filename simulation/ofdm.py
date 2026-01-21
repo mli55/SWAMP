@@ -4,23 +4,23 @@ import matplotlib.pyplot as plt
 
 def make_ellipse_area_scatterers(center, a, b, n_r=20, n_theta=36, seed=None):
     """
-    在椭圆内部随机生成 2D 散射点：
+    Randomly generate 2D scatterers inside an ellipse:
       (x - x0)^2 / a^2 + (z - z0)^2 / b^2 <= 1
 
-    随机均匀采样面积，点数 = n_r * n_theta。
+    Sample uniformly by area with n_r * n_theta points.
     """
     center = np.array(center, dtype=float)
     n_points = n_r * n_theta
 
     rng = np.random.default_rng(seed)
-    # 随机半径用 sqrt 保证面积均匀，角度均匀分布 [0, 2π)
+    # Use sqrt on radius for uniform area; angles uniform in [0, 2π).
     rs = np.sqrt(rng.random(n_points))
     thetas = rng.random(n_points) * 2.0 * np.pi
 
     xs = center[0] + a * rs * np.cos(thetas)
     zs = center[1] + b * rs * np.sin(thetas)
 
-    scatterers = np.column_stack((xs, zs))  # (N, 2)，N = n_r * n_theta
+    scatterers = np.column_stack((xs, zs))  # (N, 2), N = n_r * n_theta
     return scatterers
 
 
@@ -28,10 +28,10 @@ def build_channel(center=(0.0, 0.4), a=0.15, b=0.07,
                   tx=(-0.5, 0.0), rx=(0.5, 0.0),
                   n_r=20, n_theta=36, c=3e8, seed=None):
     """
-    根据几何生成散射点，并计算:
-      - 每个点的总路径长度 d_i
-      - 时延 tau_i
-      - 振幅 A_i  (包含“单元面积/路径衰减”)
+    From the geometry, generate scatterers and compute:
+      - Total path length d_i for each point
+      - Delay tau_i
+      - Amplitude A_i (includes cell area and path attenuation)
     """
     tx_arr = np.array(tx, dtype=float)
     rx_arr = np.array(rx, dtype=float)
@@ -44,7 +44,7 @@ def build_channel(center=(0.0, 0.4), a=0.15, b=0.07,
     d = d_tx + d_rx
     tau = d / c
 
-    # 每个散射单元的“面积 + 距离衰减”
+    # Each scatter cell's area and distance attenuation
     cell_area = np.pi * a * b / n_scatter
     A = cell_area / (d**2 + 1e-6)
 
@@ -53,26 +53,26 @@ def build_channel(center=(0.0, 0.4), a=0.15, b=0.07,
 
 def generate_wifi_like_baseband(bw=20e6, n_sub=64, n_sym=10, cp_ratio=0.25, seed=None):
     """
-    生成一个“WiFi 风格”的 OFDM 基带复信号（不严格按 802.11，只是结构类似）:
+    Generate a WiFi-style complex OFDM baseband (structure similar to 802.11, not exact):
 
-      - 总带宽约为 bw
-      - 子载波数 n_sub
-      - OFDM 符号数 n_sym
-      - 循环前缀长度比例 cp_ratio
+      - Total bandwidth ≈ bw
+      - Number of subcarriers n_sub
+      - Number of OFDM symbols n_sym
+      - Cyclic prefix length ratio cp_ratio
 
-    返回:
-      t       : 时间轴 (s)
-      s_bb    : 复基带信号 (长度 Ns)
-      fs      : 采样率 (Hz)
-      sym_len : 单个 OFDM 符号（不含 CP）的采样点数
+    Returns:
+      t       : time axis (s)
+      s_bb    : complex baseband signal (length Ns)
+      fs      : sample rate (Hz)
+      sym_len : samples per OFDM symbol without CP
     """
     rng = np.random.default_rng(seed)
 
-    # 简化：采样率 fs ≈ 带宽 bw
+    # Simplification: sample rate fs ≈ bandwidth bw
     fs = bw
-    delta_f = bw / n_sub          # 子载波间隔
-    T_sym = 1.0 / delta_f         # 有效符号时长
-    sym_len = n_sub               # 不含 CP 的采样点数
+    delta_f = bw / n_sub          # Subcarrier spacing
+    T_sym = 1.0 / delta_f         # Useful symbol duration
+    sym_len = n_sub               # Samples per symbol without CP
     dt = 1.0 / fs
 
     n_cp = int(sym_len * cp_ratio)
@@ -80,20 +80,20 @@ def generate_wifi_like_baseband(bw=20e6, n_sub=64, n_sym=10, cp_ratio=0.25, seed
 
     s_bb = np.zeros(total_len, dtype=complex)
 
-    # 子载波索引（概念用，不直接用 k 做别的）
+    # Conceptual subcarrier indices
     k = np.arange(-n_sub // 2, n_sub // 2)
 
     ptr = 0
     for _ in range(n_sym):
-        # QPSK 符号
+        # QPSK symbols
         bits = rng.integers(0, 4, size=n_sub)
         const = np.array([1+1j, -1+1j, -1-1j, 1-1j]) / np.sqrt(2.0)
         Xk = const[bits]
 
-        # IFFT 生成时域 OFDM 符号（基带）
-        x_time = np.fft.ifft(np.fft.ifftshift(Xk))  # 长度 n_sub
+        # IFFT to produce the time-domain OFDM symbol (baseband)
+        x_time = np.fft.ifft(np.fft.ifftshift(Xk))  # length n_sub
 
-        # 加循环前缀
+        # Add cyclic prefix
         x_cp = np.concatenate([x_time[-n_cp:], x_time])
 
         s_bb[ptr:ptr + len(x_cp)] = x_cp
@@ -105,11 +105,11 @@ def generate_wifi_like_baseband(bw=20e6, n_sub=64, n_sym=10, cp_ratio=0.25, seed
 
 def apply_multipath(tx_bb, A, tau, fs):
     """
-    将基带信号 tx_bb 通过多径信道:
+    Pass baseband signal tx_bb through a multipath channel:
         h(t) = sum_i A_i delta(t - tau_i)
 
-    用离散时移近似：n_i = round(tau_i * fs)
-    返回 rx_bb（复基带）
+    Approximate with discrete shifts: n_i = round(tau_i * fs)
+    Returns rx_bb (complex baseband)
     """
     tx_bb = np.asarray(tx_bb)
     n = len(tx_bb)
@@ -124,27 +124,27 @@ def apply_multipath(tx_bb, A, tau, fs):
 
 
 if __name__ == "__main__":
-    # ------------ WiFi 风格版本示例（OFDM 基带 + 多径）------------
-    fc = 2.4e9  # 载波中心频率（这里只是个“标签”，真正仿真在基带完成）
+    # ------------ WiFi-style example (OFDM baseband + multipath) ------------
+    fc = 2.4e9  # Carrier center frequency (label only; simulation runs in baseband)
 
-    # 1) 建立几何 + 信道（同一颗红薯）
+    # 1) Build geometry + channel (same sweet potato)
     scatterers, A, tau = build_channel(seed=0)
-    print(f"散射点数量: {len(scatterers)}")
-    print(f"时延范围: {tau.min()*1e9:.3f} ns ~ {tau.max()*1e9:.3f} ns")
+    print(f"Number of scatterers: {len(scatterers)}")
+    print(f"Delay range: {tau.min()*1e9:.3f} ns ~ {tau.max()*1e9:.3f} ns")
 
-    # 2) 生成 WiFi 风格 OFDM 基带信号
+    # 2) Generate WiFi-style OFDM baseband signal
     t_bb, tx_bb, fs, sym_len = generate_wifi_like_baseband(
         bw=20e6, n_sub=64, n_sym=10, seed=1
     )
-    print(f"基带采样率 fs = {fs/1e6:.1f} MHz, 信号长度 {len(tx_bb)} 点")
+    print(f"Baseband sample rate fs = {fs/1e6:.1f} MHz, signal length {len(tx_bb)} samples")
 
-    # 3) 通过多径信道
+    # 3) Pass through multipath channel
     rx_bb = apply_multipath(tx_bb, A, tau, fs)
 
-    # 对齐时间轴
+    # Align time axes
     t_rx = np.arange(len(rx_bb)) / fs
 
-    # 4) 画图：基带实部/幅度对比
+    # 4) Plot: baseband real/magnitude comparison
     plt.figure()
     # plt.plot(t_bb * 1e6, np.real(tx_bb), label="Tx baseband (real)")
     plt.plot(t_bb * 1e6, np.abs(tx_bb), label="|Tx baseband|")
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.title("Rx baseband magnitude (WiFi-like)")
 
-    # 5) 几何示意图
+    # 5) Geometry visualization
     plt.figure()
     plt.scatter(scatterers[:, 0], scatterers[:, 1], s=5, label="Scatterers")
     plt.scatter(-0.5, 0.0, marker='^', label="Tx")

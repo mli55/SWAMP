@@ -64,7 +64,7 @@ def main():
 
     print(f"LOS delay = {los['delays'][0]*1e9:.3f} ns, |LOS gain| = {abs(los['gains'][0]):.3e}")
 
-    # WiFi-like OFDM 参数（简化）
+    # WiFi-like OFDM parameters (simplified)
     bw = 20e6
     n_fft = 64
     n_sym = 10

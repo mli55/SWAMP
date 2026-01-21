@@ -9,7 +9,7 @@ from rfspsim.media.medium import Medium
 def snell_theta_t(m1: Medium, m2: Medium, theta_i: float) -> Optional[float]:
     """
     Snell: n1 sin(theta_i) = n2 sin(theta_t)
-    返回 theta_t（弧度）。若发生全反射（sin>1）则返回 None。
+    Return theta_t (radians). If total internal reflection occurs (sin>1), return None.
     """
     n1, n2 = m1.n, m2.n
     sin_t = (n1 / n2) * np.sin(theta_i)
@@ -20,21 +20,21 @@ def snell_theta_t(m1: Medium, m2: Medium, theta_i: float) -> Optional[float]:
 
 def fresnel_rt(m1: Medium, m2: Medium, theta_i: float, pol: str = "avg") -> Tuple[complex, complex]:
     """
-    无损 Fresnel 反射/透射系数（电场幅度系数）。
+    Lossless Fresnel reflection/transmission coefficients (field amplitude).
 
     pol:
       - "TE" : s-polarization
       - "TM" : p-polarization
-      - "avg": 简单平均 TE 与 TM（不是严格功率平均，但够用做 Step2）
+      - "avg": simple average of TE and TM (not a strict power average but sufficient for Step2)
 
-    返回:
+    Returns:
       (Gamma, Tau)
-      Gamma: 反射系数 (E_r / E_i)
-      Tau  : 透射系数 (E_t / E_i)
+      Gamma: reflection coefficient (E_r / E_i)
+      Tau  : transmission coefficient (E_t / E_i)
     """
     theta_t = snell_theta_t(m1, m2, theta_i)
 
-    # 全反射：这里简单处理为 |Gamma|=1, Tau=0
+    # Total internal reflection: set |Gamma|=1, Tau=0
     if theta_t is None:
         return 1.0 + 0j, 0.0 + 0j
 
@@ -61,12 +61,12 @@ def fresnel_rt(m1: Medium, m2: Medium, theta_i: float, pol: str = "avg") -> Tupl
 
 
 def reflection_coeff(m1: Medium, m2: Medium, theta_i: float, pol: str = "avg") -> complex:
-    """只取反射系数 Gamma"""
+    """Return only reflection coefficient Gamma"""
     g, _ = fresnel_rt(m1, m2, theta_i, pol=pol)
     return g
 
 
 def transmission_coeff(m1: Medium, m2: Medium, theta_i: float, pol: str = "avg") -> complex:
-    """只取透射系数 Tau"""
+    """Return only transmission coefficient Tau"""
     _, t = fresnel_rt(m1, m2, theta_i, pol=pol)
     return t

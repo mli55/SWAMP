@@ -17,17 +17,17 @@ def generate_ofdm_grid(
     used_carriers: str = "all_except_dc",
 ) -> Dict[str, np.ndarray]:
     """
-    生成一个“WiFi-like”的 OFDM 频域网格（shifted 形式：DC 在中间）。
-    这里只做 QPSK，便于 sensing 仿真。
+    Generate a WiFi-like OFDM frequency-domain grid (shifted with DC centered).
+    Use QPSK only to simplify sensing simulations.
 
-    返回:
-      X_shifted: (n_sym, n_fft) 频域符号，DC 在 index n_fft//2
+    Returns:
+      X_shifted: (n_sym, n_fft) frequency-domain symbols, DC at index n_fft//2
       used_mask: (n_fft,) bool
     """
     rng = np.random.default_rng(seed)
 
     used_mask = np.ones(n_fft, dtype=bool)
-    used_mask[n_fft // 2] = False  # DC 不用
+    used_mask[n_fft // 2] = False  # Skip DC
 
     if used_carriers.lower() == "all_except_dc":
         pass
@@ -43,8 +43,8 @@ def generate_ofdm_grid(
 
 def ofdm_modulate(X_shifted: np.ndarray, cp_len: int) -> np.ndarray:
     """
-    IFFT + CP，把频域网格变成连续时域基带波形（复数）。
-    X_shifted: DC 在中间（fftshift 排列）
+    IFFT + CP to turn the frequency grid into a continuous complex baseband waveform.
+    X_shifted has DC in the middle (fftshift order).
     """
     n_sym, n_fft = X_shifted.shape
     out = []
@@ -58,8 +58,8 @@ def ofdm_modulate(X_shifted: np.ndarray, cp_len: int) -> np.ndarray:
 
 def subcarrier_frequencies_shifted(n_fft: int, bw: float) -> np.ndarray:
     """
-    返回与 X_shifted 对齐的子载波频率偏移（Hz），DC 在中间：
-      f[k] = (k - n_fft//2) * (bw/n_fft)
+    Return subcarrier frequency offsets (Hz) aligned with X_shifted, DC-centered:
+      f[k] = (k - n_fft//2) * (bw / n_fft)
     """
     df = bw / n_fft
     k = np.arange(n_fft) - (n_fft // 2)

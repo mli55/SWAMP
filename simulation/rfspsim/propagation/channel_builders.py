@@ -15,8 +15,8 @@ def build_los_taps(
     model: str = "inv_d2",
 ) -> Dict[str, np.ndarray]:
     """
-    LOS / Tx->Rx 直达（都在空气中）：
-      路径: Tx(air) -> Rx(air)
+    LOS / direct Tx->Rx path (both in air):
+      Path: Tx(air) -> Rx(air)
 
     delay = |Tx-Rx| / v_air
 
@@ -59,13 +59,13 @@ def build_surface_scatter_taps(
     include_fresnel: bool = True,
 ) -> Dict[str, np.ndarray]:
     """
-    地表散射（clutter）：
-      每个 surface point 当作一个点散射体，
-      路径: Tx(air) -> S(interface) -> Rx(air)
+    Surface scatter (clutter):
+      Treat each surface point as a point scatterer,
+      Path: Tx(air) -> S(interface) -> Rx(air)
 
     gain ~ per_point_length / (L_total^2) * surface_reflectivity * Gamma(air->soil)
 
-    返回 dict:
+    Returns dict:
       points (N,2), delays (N,), gains (N,)
     """
     tx = np.asarray(tx, dtype=float)
@@ -83,7 +83,7 @@ def build_surface_scatter_taps(
         Ltot = L1 + L2
         delays[i] = Ltot / v_air
 
-        # 入射角近似用 Tx->S 的几何角
+        # Approximate incident angle using Tx->S geometry
         if L1 < 1e-12:
             theta_i = 0.0
         else:
@@ -113,8 +113,8 @@ def build_target_reflection_taps(
     include_fresnel: bool = True,
 ) -> Dict[str, np.ndarray]:
     """
-    地下目标（红薯）散射点回波：
-      路径: Tx(air) -> (折射入土) -> target_point(soil) -> (折射出土) -> Rx(air)
+    Subsurface target (sweet potato) scatter echoes:
+      Path: Tx(air) -> (refract into soil) -> target_point(soil) -> (refract out) -> Rx(air)
 
     delay = (L_air_in/va + L_soil_in/vs) + (L_soil_out/vs + L_air_out/va)
 
@@ -133,10 +133,10 @@ def build_target_reflection_taps(
     va, vs = air.v, soil.v
 
     for i, p in enumerate(pts):
-        # 入土段：tx(air) -> p(soil)
+        # Inbound refraction: tx(air) -> p(soil)
         cross_in, L_air_in, L_soil_in, theta_air_i, _ = refracted_two_segment(tx, p, va, vs, interface_z=interface_z)
 
-        # 出土段：p(soil) -> rx(air)
+        # Outbound refraction: p(soil) -> rx(air)
         cross_out, L_soil_out, L_air_out, theta_soil_i, _ = refracted_two_segment(p, rx, vs, va, interface_z=interface_z)
 
         entry_points[i] = cross_in
