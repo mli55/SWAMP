@@ -1,0 +1,3 @@
+PRB 50, DL_Freq 2680 Mhz
+
+iperf bandwidth 10000000, 100s tcp, packets
