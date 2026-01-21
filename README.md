@@ -1,11 +1,10 @@
 # SWAMP
 
 Code release for the paper **Commodity Wireless Links Monitor Belowground Tuber Growth**  
-System name: **SWAMP**
 
 ## Overview
 
-SWAMP is a research prototype for noninvasive subsurface sensing of sweet potato tuber growth and localization using wireless signals. The study combines two measurement modalities.
+SWAMP is a research prototype for noninvasive subsurface sensing of belowground tuber growth and localization using wireless signals. The study combines two measurement modalities.
 
 - Channel Frequency Response (CFR) sweeps collected with software defined radios  
 - LTE based link and channel quality indicators collected with an srsRAN based private LTE setup
@@ -32,18 +31,6 @@ Current top level directories in this snapshot
 - Simulation utilities where applicable.
 
 Some experiment control and deployment components that are tightly coupled to lab specific SDR hardware setup and local network configuration are not included.
-
-## Data availability
-
-Measurement datasets are not included in this repository at the moment. Some datasets contain lab specific metadata and are being prepared for public release. If you are a reviewer or editor requesting access, the authors can provide an archived bundle suitable for verification upon reasonable request.
-
-## Code availability
-
-The code used for data preprocessing, feature extraction, analysis, and figure generation is available in this repository. Components required to run the full measurement stack end to end are partially omitted because they depend on lab specific SDR hardware configuration and local deployment details. Additional code needed to reproduce the experiments can be made available from the authors upon reasonable request.
-
-## Licensing
-
-This repository includes third party components that remain under their original licenses. Please review the license and notice files within each subdirectory before redistribution.
 
 ## Citation
 
